@@ -1,6 +1,8 @@
 import { world } from "@minecraft/server";
 import { CONFIG } from "./config.js";
 
+let cycleCount = 0;
+
 function distanceSq(a, b) {
   const dx = a.x - b.x;
   const dy = a.y - b.y;
@@ -18,7 +20,7 @@ function distanceToNearestPlayer(entityLoc, players) {
 }
 
 function isProtected(entity) {
-  return !entity.isValid() || (entity.nameTag && entity.nameTag.length > 0);
+  return Boolean(entity.nameTag && entity.nameTag.length > 0);
 }
 
 function getDimensionSettings(dimensionId) {
@@ -36,6 +38,8 @@ function trimEntityType(dimension, entityType, maxCap, despawnRadius, players) {
 
   const survivors = [];
   for (const entity of entities) {
+    if (!entity.isValid()) continue;
+
     if (isProtected(entity)) {
       survivors.push(entity);
       continue;
@@ -64,7 +68,50 @@ function trimEntityType(dimension, entityType, maxCap, despawnRadius, players) {
   }
 }
 
-function runProjectileControl(players, dimensionIds) {
+function* runItemControl(players, dimensionIds) {
+  for (const dimensionId of dimensionIds) {
+    const dimension = world.getDimension(dimensionId);
+    let items;
+    try {
+      items = dimension.getEntities({ type: CONFIG.ITEM_ENTITY.TYPE });
+    } catch (err) {
+      yield;
+      continue;
+    }
+
+    if (items.length === 0) {
+      yield;
+      continue;
+    }
+
+    const settings = getDimensionSettings(dimensionId);
+    const radius = CONFIG.ITEM_ENTITY.DESPAWN_RADIUS * settings.radiusMultiplier;
+    const cap = Math.max(1, Math.round(CONFIG.ITEM_ENTITY.MAX_PER_DIMENSION * settings.capMultiplier));
+
+    const survivors = [];
+    for (const item of items) {
+      if (!item.isValid()) continue;
+      const dist = distanceToNearestPlayer(item.location, players);
+      if (dist > radius) {
+        item.remove();
+      } else {
+        survivors.push({ entity: item, dist });
+      }
+    }
+
+    if (survivors.length > cap) {
+      survivors.sort((a, b) => b.dist - a.dist);
+      const excess = survivors.length - cap;
+      for (let i = 0; i < excess; i++) {
+        survivors[i].entity.remove();
+      }
+    }
+
+    yield;
+  }
+}
+
+function* runProjectileControl(players, dimensionIds) {
   const all = [];
   for (const dimensionId of dimensionIds) {
     const dimension = world.getDimension(dimensionId);
@@ -77,6 +124,7 @@ function runProjectileControl(players, dimensionIds) {
       }
       for (const e of entities) all.push(e);
     }
+    yield;
   }
 
   if (all.length <= CONFIG.MAX_PROJECTILES) return;
@@ -92,18 +140,29 @@ function runProjectileControl(players, dimensionIds) {
   const excess = all.length - CONFIG.MAX_PROJECTILES;
   for (let i = 0; i < excess && i < sorted.length; i++) {
     sorted[i].entity.remove();
+    if (i % 20 === 19) yield;
   }
 }
 
-export function runEntityManagement() {
+export function* runEntityManagement() {
   const players = world.getPlayers();
   if (players.length === 0) return;
 
+  cycleCount++;
+
   const dimensionIds = ["overworld", "nether", "the_end"];
   const allTypes = [
-    ...new Set([...CONFIG.MANAGED_ENTITIES, ...Object.keys(CONFIG.HEAVY_ENTITIES)]),
+    ...new Set([
+      ...CONFIG.MANAGED_ENTITIES,
+      ...Object.keys(CONFIG.HEAVY_ENTITIES),
+      ...Object.keys(CONFIG.PASSIVE_ENTITIES),
+    ]),
   ];
-  const allCaps = { ...CONFIG.MAX_ENTITIES, ...CONFIG.HEAVY_ENTITIES };
+  const allCaps = {
+    ...CONFIG.MAX_ENTITIES,
+    ...CONFIG.HEAVY_ENTITIES,
+    ...CONFIG.PASSIVE_ENTITIES,
+  };
 
   for (const dimensionId of dimensionIds) {
     const dimension = world.getDimension(dimensionId);
@@ -117,8 +176,15 @@ export function runEntityManagement() {
           ? Math.max(1, Math.round(baseCap * settings.capMultiplier))
           : undefined;
       trimEntityType(dimension, entityType, cap, radius, players);
+      yield; // one yield per (dimension, entityType) pair - this is the bulk of the work
     }
   }
 
-  runProjectileControl(players, dimensionIds);
+  if (cycleCount % CONFIG.CYCLE_MULTIPLIERS.projectiles === 0) {
+    yield* runProjectileControl(players, dimensionIds);
+  }
+
+  if (cycleCount % CONFIG.CYCLE_MULTIPLIERS.items === 0) {
+    yield* runItemControl(players, dimensionIds);
+  }
 }
