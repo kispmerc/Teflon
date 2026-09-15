@@ -44,3 +44,5 @@ that easy, i think u already know
 ## Limitations
 
 This is a scripting-layer add-on, not a native engine mod. It cannot change core rendering, chunk generation, or lighting performance - only what the Scripting API and spawn rules expose.
+
+## That Open Source 
