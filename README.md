@@ -1,6 +1,6 @@
 # Performance Optimizer BP
 
-A Minecraft Bedrock Behavior Pack that reduces server load by managing mob entities and spawn density. It runs silently in the background with no logging, chat messages, or UI.
+A Minecraft Bedrock Behavior Pack that reduces server load by managing mob entities and spawn density. It runs silently in the background with no logging, chat messages, or ui.
 
 ## What it does
 
@@ -18,7 +18,7 @@ Entities with a name tag are never touched, so tamed or player-named mobs are sa
 - `scripts/main.js` — entry point. Registers the entity management task on world load.
 - `scripts/modules/config.js` — all tunable values (check interval, per-type entity caps, despawn radius, managed entity list).
 - `scripts/modules/tickThrottle.js` — thin wrapper around `system.runInterval` with error isolation, so one failing task can't stop others.
-- `scripts/modules/entityManager.js` — core logic: scans each dimension, despawns far mobs, then trims any type still over its cap.
+- `scripts/modules/entityManager.js` — core logic- scans each dimension, despawns far mobs, then trims any type still over its cap.
 - `spawn_rules/*.json` — vanilla spawn rule overrides for zombie, skeleton, and creeper.
 
 ## Configuration :))
@@ -34,17 +34,13 @@ MANAGED_ENTITIES        // which entity types this pack manages
 
 ## Installation
 
-Copy the `BP_PerformanceOptimizer` folder into:
-
-- Single world: `<world folder>/behavior_packs/`
-- All worlds (dev): `com.mojang/development_behavior_packs/`
-- Bedrock Dedicated Server: `behavior_packs/`, then register the pack's uuid/version in `world_behavior_packs.json`
+that easy, i think u already know
 
 ## Requirements
 
-- Minecraft Bedrock 1.21.1+
+- Minecraft Bedrock 1.21.1+++
 - `@minecraft/server` API version 1.14.0
 
 ## Limitations
 
-This is a scripting-layer add-on, not a native engine mod. It cannot change core rendering, chunk generation, or lighting performance — only what the Scripting API and spawn rules expose.
+This is a scripting-layer add-on, not a native engine mod. It cannot change core rendering, chunk generation, or lighting performance - only what the Scripting API and spawn rules expose.
