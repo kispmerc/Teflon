@@ -21,14 +21,30 @@ export const CONFIG = {
     "minecraft:warden": 1,
   },
 
-  FAR_DESPAWN_RADIUS: 96,
+  PASSIVE_ENTITIES: {
+    "minecraft:chicken": 40,
+    "minecraft:cow": 30,
+    "minecraft:pig": 30,
+    "minecraft:sheep": 30,
+    "minecraft:rabbit": 25,
+    "minecraft:horse": 15,
+    "minecraft:llama": 15,
+    "minecraft:turtle": 15,
+  },
 
+  FAR_DESPAWN_RADIUS: 96,
   MANAGED_ENTITIES: [
     "minecraft:zombie",
     "minecraft:skeleton",
     "minecraft:creeper",
     "minecraft:spider",
   ],
+
+  ITEM_ENTITY: {
+    TYPE: "minecraft:item",
+    MAX_PER_DIMENSION: 150,
+    DESPAWN_RADIUS: 96,
+  },
 
   MAX_PROJECTILES: 100,
 
@@ -51,5 +67,10 @@ export const CONFIG = {
     overworld: { radiusMultiplier: 1.0, capMultiplier: 1.0 },
     nether: { radiusMultiplier: 0.75, capMultiplier: 0.7 },
     the_end: { radiusMultiplier: 0.6, capMultiplier: 0.5 },
+  },
+
+CYCLE_MULTIPLIERS: {
+    projectiles: 2,
+    items: 2,
   },
 };
