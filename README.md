@@ -1,48 +1,105 @@
-# Performance Optimizer BP
+# Teflon
 
-A Minecraft Bedrock Behavior Pack that reduces server load by managing mob entities and spawn density. It runs silently in the background with no logging, chat messages, or ui.
+Teflon is a Minecraft Bedrock Edition Behavior Pack focused on reducing unnecessary entity activity and improving world performance.
 
-## What it does
+The project is based on and extends the original Teflon project by [kispmerc](https://github.com/kispmerc/Teflon).
 
-**Entity limiting** — caps the number of zombies, skeletons, creepers, and spiders per dimension. When a mob type exceeds its configured limit, the entities farthest from any player are removed first.
+## Features
 
-**Distance-based despawn** — mobs that are farther than a configured radius from every online player are removed, preventing entity buildup in unloaded or abandoned areas.
+Teflon provides several mechanisms for reducing unnecessary entity workload:
 
-**Spawn density reduction** — `spawn_rules` overrides for zombie, skeleton, and creeper lower their weight, herd size, and surface density compared to vanilla, so fewer of them spawn in the first place.
+* Entity count limits
+* Distance-based entity cleanup
+* Mob spawn optimization
+* Dropped item cleanup
+* Projectile cleanup
+* Per-area entity limits
+* Entity protection for named entities
+* Configurable cleanup intervals and limits
+* Adaptive optimization based on entity workload
 
-Entities with a name tag are never touched, so tamed or player-named mobs are safe.
+The exact features and behavior may vary depending on the current version of the project.
 
-## How it works
+## How It Works
 
-- `manifest.json` — pack metadata, declares the `data` and `script` modules and the `@minecraft/server` dependency.
-- `scripts/main.js` — entry point. Registers the entity management task on world load.
-- `scripts/modules/config.js` — all tunable values (check interval, per-type entity caps, despawn radius, managed entity list).
-- `scripts/modules/tickThrottle.js` — thin wrapper around `system.runInterval` with error isolation, so one failing task can't stop others.
-- `scripts/modules/entityManager.js` — core logic- scans each dimension, despawns far mobs, then trims any type still over its cap.
-- `spawn_rules/*.json` — vanilla spawn rule overrides for zombie, skeleton, and creeper.
+Minecraft Bedrock worlds can accumulate large numbers of entities over time. Entities may require simulation, AI processing, movement updates, collision checks, and other game logic.
 
-## Basic Configuration :))
+Teflon periodically checks entities and applies configured rules to prevent unnecessary accumulation.
 
-Edit `scripts/modules/config.js`:
+The general process is:
 
-```js
-ENTITY_CHECK_INTERVAL   // how often (in ticks) the check runs, 20 ticks = 1s
-MAX_ENTITIES            // per type cap, per dimension
-FAR_DESPAWN_RADIUS      // distance (blocks) from all players beyond which mobs despawn
-MANAGED_ENTITIES        // which entity types this pack manages
+```text
+Entities
+   |
+   v
+Entity monitoring
+   |
+   +-- Check entity type
+   +-- Check distance
+   +-- Check area limits
+   +-- Check protection rules
+   |
+   v
+Apply cleanup / optimization rules
 ```
+
+Teflon primarily targets entity-related workload. It does not directly optimize Minecraft's rendering pipeline, GPU performance, or chunk rendering.
+
+## Configuration
+
+Optimization behavior can be adjusted through the project's configuration.
+
+Depending on the version, configurable options may include:
+
+* Maximum entity counts
+* Cleanup distance
+* Cleanup interval
+* Mob limits
+* Item lifetime
+* Projectile limits
+* Per-area limits
+* Protected entity types
+
+Configuration values should be adjusted according to the requirements of each world.
 
 ## Installation
 
-that easy, i think u already know
+1. Download or clone this repository.
+2. Import the Behavior Pack into Minecraft Bedrock Edition.
+3. Activate the pack in the desired world.
+4. Configure the available options if required.
+5. Start the world.
 
-## Requirements
+Make sure the pack version is compatible with your Minecraft Bedrock version.
 
-- Minecraft Bedrock 1.21.1+++
-- `@minecraft/server` API version 1.14.0
+## Compatibility
 
-## Limitations
+Teflon is intended for Minecraft Bedrock Edition.
 
-This is a scripting-layer add-on, not a native engine mod. It cannot change core rendering, chunk generation, or lighting performance - only what the Scripting API and spawn rules expose.
+Compatibility with other Behavior Packs may depend on whether they modify the same entities, components, spawn rules, or scripts.
 
-## That Open Source 
+## Open Source
+
+This project is open source.
+
+Teflon is based on the original project:
+
+**Original project:** [kispmerc/Teflon](https://github.com/kispmerc/Teflon)
+
+Credit is given to the original author, **kispmerc**, for the original Teflon project and its implementation.
+
+This repository contains modifications and additional development based on that work.
+
+Please refer to the original repository for the original project's license and attribution requirements.
+
+## Credits
+
+* Original Teflon project: [kispmerc/Teflon](https://github.com/kispmerc/Teflon)
+* Original author: kispmerc
+* Modified and maintained in this repository by the respective contributors
+
+## License
+
+This project follows the licensing requirements of the original Teflon project.
+
+See the original repository and included license files for the applicable license terms.
