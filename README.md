@@ -21,7 +21,7 @@ Entities with a name tag are never touched, so tamed or player-named mobs are sa
 - `scripts/modules/entityManager.js` — core logic- scans each dimension, despawns far mobs, then trims any type still over its cap.
 - `spawn_rules/*.json` — vanilla spawn rule overrides for zombie, skeleton, and creeper.
 
-## Configuration :))
+## Basic Configuration :))
 
 Edit `scripts/modules/config.js`:
 
