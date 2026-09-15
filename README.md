@@ -21,13 +21,13 @@ Entities with a name tag are never touched, so tamed or player-named mobs are sa
 - `scripts/modules/entityManager.js` — core logic: scans each dimension, despawns far mobs, then trims any type still over its cap.
 - `spawn_rules/*.json` — vanilla spawn rule overrides for zombie, skeleton, and creeper.
 
-## Configuration
+## Configuration :))
 
 Edit `scripts/modules/config.js`:
 
 ```js
-ENTITY_CHECK_INTERVAL   // how often (in ticks) the check runs, 20 ticks = 1 second
-MAX_ENTITIES            // per-type cap, per dimension
+ENTITY_CHECK_INTERVAL   // how often (in ticks) the check runs, 20 ticks = 1s
+MAX_ENTITIES            // per type cap, per dimension
 FAR_DESPAWN_RADIUS      // distance (blocks) from all players beyond which mobs despawn
 MANAGED_ENTITIES        // which entity types this pack manages
 ```
@@ -42,7 +42,7 @@ Copy the `BP_PerformanceOptimizer` folder into:
 
 ## Requirements
 
-- Minecraft Bedrock 1.21.0 or later
+- Minecraft Bedrock 1.21.1+
 - `@minecraft/server` API version 1.14.0
 
 ## Limitations
