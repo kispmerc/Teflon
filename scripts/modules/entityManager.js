@@ -176,7 +176,7 @@ export function* runEntityManagement() {
           ? Math.max(1, Math.round(baseCap * settings.capMultiplier))
           : undefined;
       trimEntityType(dimension, entityType, cap, radius, players);
-      yield; // one yield per (dimension, entityType) pair - this is the bulk of the work
+      yield;
     }
   }
 
