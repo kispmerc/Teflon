@@ -1,5 +1,5 @@
 export const CONFIG = {
-  ENTITY_CHECK_INTERVAL: 40,
+  ENTITY_CHECK_INTERVAL: 40,[
 
   MAX_ENTITIES: {
     "minecraft:zombie": 20,
