@@ -1,11 +1,13 @@
 # Teflon
 
-Teflon is a Minecraft Bedrock Behavior Pack made to help improve performance by reducing unnecessary entity activity in the world.
+**Minecraft Bedrock Performance Optimizer**
 
-It works by managing entities such as mobs, dropped items, and projectiles, helping prevent them from building up and creating unnecessary workload.
+Teflon is a lightweight Behavior Pack that improves performance by reducing unnecessary entity activity in your world.
 
-Teflon can also optimize mob spawning and clean up entities based on configurable rules such as distance, limits, and other conditions.
+It helps manage things like **mob spawning, dropped items, projectiles, and other entities** that can cause unnecessary workload.
 
-The goal of Teflon is to keep the number of unnecessary entities under control while keeping normal gameplay mostly unchanged.
+No texture changes, no visual downgrades - **just less work for Minecraft to process.**
+
+> **Less workload. More performance.**
 
 ## Teflon is still in early stages of development 
