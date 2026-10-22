@@ -12,58 +12,59 @@ function distanceSq(a, b) {
 
 function distanceToNearestPlayer(entityLoc, players) {
   let min = Infinity;
-  for (const p of players) {
-    const d = distanceSq(entityLoc, p.location);
-    if (d < min) min = d;
+  for (const player of players) {
+    const distance = distanceSq(entityLoc, player.location);
+    if (distance < min) min = distance;
   }
   return Math.sqrt(min);
 }
 
 function isProtected(entity) {
-  return Boolean(entity.nameTag && entity.nameTag.length > 0);
+  return Boolean(entity.nameTag && entity.nameTag.length > 0) || entity.hasTag("teflon:protected");
 }
 
 function getDimensionSettings(dimensionId) {
   return CONFIG.DIMENSION_SETTINGS[dimensionId] ?? { radiusMultiplier: 1, capMultiplier: 1 };
 }
 
-function trimEntityType(dimension, entityType, maxCap, despawnRadius, players) {
+function getDimensionPlayers(players, dimensionId) {
+  return players.filter((player) => player.dimension.id === `minecraft:${dimensionId}`);
+}
+
+function* trimEntityType(dimension, entityType, maxCap, despawnRadius, players) {
   let entities;
   try {
     entities = dimension.getEntities({ type: entityType });
-  } catch (err) {
+  } catch {
     return;
   }
-  if (entities.length === 0) return;
 
   const survivors = [];
   for (const entity of entities) {
     if (!entity.isValid()) continue;
-
     if (isProtected(entity)) {
-      survivors.push(entity);
-      continue;
-    }
-    const dist = distanceToNearestPlayer(entity.location, players);
-    if (dist > despawnRadius) {
-      entity.remove();
+      survivors.push({ entity, distance: 0 });
     } else {
-      survivors.push(entity);
+      const distance = distanceToNearestPlayer(entity.location, players);
+      if (distance > despawnRadius) entity.remove();
+      else survivors.push({ entity, distance });
     }
+    yield;
   }
 
   if (maxCap !== undefined && survivors.length > maxCap) {
-    const sorted = survivors
-      .filter((e) => !isProtected(e))
-      .map((e) => ({
-        entity: e,
-        dist: distanceToNearestPlayer(e.location, players),
+    const removable = survivors
+      .filter((item) => !isProtected(item.entity))
+      .map((item) => ({
+        entity: item.entity,
+        distance: item.distance ?? distanceToNearestPlayer(item.entity.location, players),
       }))
-      .sort((a, b) => b.dist - a.dist);
+      .sort((a, b) => b.distance - a.distance);
 
     const excess = survivors.length - maxCap;
-    for (let i = 0; i < excess && i < sorted.length; i++) {
-      sorted[i].entity.remove();
+    for (let i = 0; i < excess && i < removable.length; i++) {
+      if (removable[i].entity.isValid()) removable[i].entity.remove();
+      yield;
     }
   }
 }
@@ -71,15 +72,11 @@ function trimEntityType(dimension, entityType, maxCap, despawnRadius, players) {
 function* runItemControl(players, dimensionIds) {
   for (const dimensionId of dimensionIds) {
     const dimension = world.getDimension(dimensionId);
+    const dimensionPlayers = getDimensionPlayers(players, dimensionId);
     let items;
     try {
       items = dimension.getEntities({ type: CONFIG.ITEM_ENTITY.TYPE });
-    } catch (err) {
-      yield;
-      continue;
-    }
-
-    if (items.length === 0) {
+    } catch {
       yield;
       continue;
     }
@@ -87,60 +84,55 @@ function* runItemControl(players, dimensionIds) {
     const settings = getDimensionSettings(dimensionId);
     const radius = CONFIG.ITEM_ENTITY.DESPAWN_RADIUS * settings.radiusMultiplier;
     const cap = Math.max(1, Math.round(CONFIG.ITEM_ENTITY.MAX_PER_DIMENSION * settings.capMultiplier));
-
     const survivors = [];
+
     for (const item of items) {
-      if (!item.isValid()) continue;
-      const dist = distanceToNearestPlayer(item.location, players);
-      if (dist > radius) {
-        item.remove();
-      } else {
-        survivors.push({ entity: item, dist });
+      if (item.isValid()) {
+        const distance = distanceToNearestPlayer(item.location, dimensionPlayers);
+        if (distance > radius) item.remove();
+        else survivors.push({ entity: item, distance });
       }
+      yield;
     }
 
-    if (survivors.length > cap) {
-      survivors.sort((a, b) => b.dist - a.dist);
-      const excess = survivors.length - cap;
-      for (let i = 0; i < excess; i++) {
-        survivors[i].entity.remove();
-      }
+    survivors.sort((a, b) => b.distance - a.distance);
+    const excess = Math.max(0, survivors.length - cap);
+    for (let i = 0; i < excess; i++) {
+      if (survivors[i].entity.isValid()) survivors[i].entity.remove();
+      yield;
     }
-
     yield;
   }
 }
 
 function* runProjectileControl(players, dimensionIds) {
-  const all = [];
   for (const dimensionId of dimensionIds) {
     const dimension = world.getDimension(dimensionId);
+    const dimensionPlayers = getDimensionPlayers(players, dimensionId);
+    const projectiles = [];
+
     for (const type of CONFIG.PROJECTILE_TYPES) {
       let entities;
       try {
         entities = dimension.getEntities({ type });
-      } catch (err) {
+      } catch {
         continue;
       }
-      for (const e of entities) all.push(e);
+      for (const entity of entities) {
+        if (entity.isValid()) {
+          projectiles.push({ entity, distance: distanceToNearestPlayer(entity.location, dimensionPlayers) });
+        }
+      }
+      yield;
+    }
+
+    projectiles.sort((a, b) => b.distance - a.distance);
+    const excess = Math.max(0, projectiles.length - CONFIG.MAX_PROJECTILES);
+    for (let i = 0; i < excess; i++) {
+      if (projectiles[i].entity.isValid()) projectiles[i].entity.remove();
+      if (i % 20 === 19) yield;
     }
     yield;
-  }
-
-  if (all.length <= CONFIG.MAX_PROJECTILES) return;
-
-  const sorted = all
-    .filter((e) => e.isValid())
-    .map((e) => ({
-      entity: e,
-      dist: distanceToNearestPlayer(e.location, players),
-    }))
-    .sort((a, b) => b.dist - a.dist);
-
-  const excess = all.length - CONFIG.MAX_PROJECTILES;
-  for (let i = 0; i < excess && i < sorted.length; i++) {
-    sorted[i].entity.remove();
-    if (i % 20 === 19) yield;
   }
 }
 
@@ -149,33 +141,24 @@ export function* runEntityManagement() {
   if (players.length === 0) return;
 
   cycleCount++;
-
   const dimensionIds = ["overworld", "nether", "the_end"];
-  const allTypes = [
-    ...new Set([
-      ...CONFIG.MANAGED_ENTITIES,
-      ...Object.keys(CONFIG.HEAVY_ENTITIES),
-      ...Object.keys(CONFIG.PASSIVE_ENTITIES),
-    ]),
-  ];
-  const allCaps = {
-    ...CONFIG.MAX_ENTITIES,
-    ...CONFIG.HEAVY_ENTITIES,
-    ...CONFIG.PASSIVE_ENTITIES,
-  };
+  const allTypes = [...new Set([
+    ...CONFIG.MANAGED_ENTITIES,
+    ...Object.keys(CONFIG.HEAVY_ENTITIES),
+    ...Object.keys(CONFIG.PASSIVE_ENTITIES),
+  ])];
+  const allCaps = { ...CONFIG.MAX_ENTITIES, ...CONFIG.HEAVY_ENTITIES, ...CONFIG.PASSIVE_ENTITIES };
 
   for (const dimensionId of dimensionIds) {
     const dimension = world.getDimension(dimensionId);
+    const dimensionPlayers = getDimensionPlayers(players, dimensionId);
     const settings = getDimensionSettings(dimensionId);
     const radius = CONFIG.FAR_DESPAWN_RADIUS * settings.radiusMultiplier;
 
     for (const entityType of allTypes) {
       const baseCap = allCaps[entityType];
-      const cap =
-        baseCap !== undefined
-          ? Math.max(1, Math.round(baseCap * settings.capMultiplier))
-          : undefined;
-      trimEntityType(dimension, entityType, cap, radius, players);
+      const cap = baseCap === undefined ? undefined : Math.max(1, Math.round(baseCap * settings.capMultiplier));
+      yield* trimEntityType(dimension, entityType, cap, radius, dimensionPlayers);
       yield;
     }
   }
@@ -183,7 +166,6 @@ export function* runEntityManagement() {
   if (cycleCount % CONFIG.CYCLE_MULTIPLIERS.projectiles === 0) {
     yield* runProjectileControl(players, dimensionIds);
   }
-
   if (cycleCount % CONFIG.CYCLE_MULTIPLIERS.items === 0) {
     yield* runItemControl(players, dimensionIds);
   }
