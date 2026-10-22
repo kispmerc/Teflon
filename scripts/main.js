@@ -6,7 +6,26 @@ import { runEntityManagement } from "./modules/entityManager.js";
 world.afterEvents.worldInitialize.subscribe(() => {
   registerThrottledTask(
     "entityManagement",
-    () => system.runJob(runEntityManagement()),
+    () => {
+      if (entityManagementRunning) return;
+      entityManagementRunning = true;
+      try {
+        system.runJob(manageEntities());
+      } catch (error) {
+        entityManagementRunning = false;
+        throw error;
+      }
+    },
     CONFIG.ENTITY_CHECK_INTERVAL
   );
 });
+
+let entityManagementRunning = false;
+
+function* manageEntities() {
+  try {
+    yield* runEntityManagement();
+  } finally {
+    entityManagementRunning = false;
+  }
+}
